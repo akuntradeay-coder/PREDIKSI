@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detektor Saham KERING - 100% Local</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #1f2937;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 1.1em;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            margin-bottom: 20px;
+            background: #f8fafc;
+            line-height: 1.4;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .result {
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .sangat-kering {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: 4px solid #dc2626;
+            animation: pulse 1s infinite;
+        }
+        
+        .kering {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            border: 4px solid #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        
+        .menuju-kering {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: white;
+            border: 4px solid #3b82f6;
+        }
+        
+        .belum-kering {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            border: 4px solid #4b5563;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .score-breakdown {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .score-bar {
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        
+        .score-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .final-score {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .details {
+            text-align: left;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0fdf4;
+            border-radius: 10px;
+            border-left: 4px solid #10b981;
+        }
+        
+        .data-preview {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            overflow-x: auto;
+        }
+        
+        .sample-btn {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> DETEKTOR SAHAM </h1>
+            <p>100% PREDIKSI LAVIN</p>
+        </div>
+        
+        <div class="data-preview">
+            <strong>Format yang Diterima:</strong><br>
+            Day Date Open High Low Close Volume Value CO CH CL CC OH LH<br>
+            1 10-11-2025 104 105 102 105 1.881.200 197.526.000 1.96% 2.94% 0.00% 2.94% 0.96% 0.00%
+        </div>
+        
+        <textarea id="stockData" placeholder="PASTE DATA KAMU PERSIS SEPERTI CONTOH DI ATAS (include header)
+
+Contoh:
+Day	Date	Open	High	Low	Close	Volume	Value	Close to Open (CO)	Close to High (CH)	Close to Low (CL)	Close to Close (CC)	Open to High (OH)	Low to High (LH)
+1	10-11-2025	104	105	102	105	1.881.200	197.526.000	1.96%	2.94%	0.00%	2.94%	0.96%	0.00%
+2	07-11-2025	104	104	102	102	2.292.800	233.865.600	0.97%	0.97%	-0.97%	-0.97%	0.00%	0.00%
+3	06-11-2025	103	115	101	103	24.830.300	2.557.520.900	0.00%	11.65%	-1.94%	0.00%	11.65%	0.00%
+
+... (lanjutkan sampai 30 data)"></textarea>
+        
+        <div style="text-align: center; margin-bottom: 15px;">
+            <button class="sample-btn" onclick="loadSampleData()"> Load Sample Data</button>
+            <button class="sample-btn" onclick="clearData()"> Clear Data</button>
+        </div>
+        
+        <button class="btn" onclick="checkKering()">
+             CEK STATUS KERING
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Menganalisis data...</p>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function loadSampleData() {
+            const sampleData = `Day	Date	Open	High	Low	Close	Volume	Value	Close to Open (CO)	Close to High (CH)	Close to Low (CL)	Close to Close (CC)	Open to High (OH)	Low to High (LH)
+1	10-11-2025	104	105	102	105	1.881.200	197.526.000	1.96%	2.94%	0.00%	2.94%	0.96%	0.00%
+2	07-11-2025	104	104	102	102	2.292.800	233.865.600	0.97%	0.97%	-0.97%	-0.97%	0.00%	0.00%
+3	06-11-2025	103	115	101	103	24.830.300	2.557.520.900	0.00%	11.65%	-1.94%	0.00%	11.65%	0.00%
+4	05-11-2025	104	105	102	103	957.500	98.622.500	-0.95%	0.00%	-2.86%	-1.90%	0.96%	4.76%
+5	04-11-2025	104	105	100	105	3.603.500	378.367.500	0.00%	0.96%	-3.85%	0.96%	0.96%	0.95%
+6	03-11-2025	106	107	104	104	2.963.600	308.214.400	-0.93%	0.00%	-2.80%	-2.80%	0.94%	2.80%
+7	31-10-2025	104	112	104	107	7.478.300	800.178.100	-0.95%	6.67%	-0.95%	1.90%	7.69%	8.04%
+8	30-10-2025	103	110	103	105	5.273.200	553.686.000	-1.90%	4.76%	-1.90%	0.00%	6.80%	7.27%
+9	29-10-2025	103	106	102	105	1.989.700	208.918.500	0.98%	3.92%	0.00%	2.94%	2.91%	3.77%
+10	28-10-2025	104	107	102	102	1.604.400	163.648.800	0.00%	2.88%	-1.92%	-1.92%	2.88%	4.67%
+11	27-10-2025	107	108	102	104	4.044.700	420.648.800	0.00%	0.93%	-4.67%	-2.80%	0.93%	2.78%
+12	24-10-2025	105	110	105	107	8.702.100	931.124.700	0.00%	4.76%	0.00%	1.90%	4.76%	7.27%
+13	23-10-2025	105	106	102	105	2.449.200	257.166.000	1.94%	2.91%	-0.97%	1.94%	0.95%	3.77%
+14	22-10-2025	106	108	102	103	7.595.500	782.336.500	0.00%	1.89%	-3.77%	-2.83%	1.89%	2.78%
+15	21-10-2025	107	112	105	106	5.273.400	558.980.400	0.00%	4.67%	-1.87%	-0.93%	4.67%	6.25%
+16	20-10-2025	108	110	105	107	11.506.300	1.231.174.100	-2.70%	-0.90%	-5.41%	-3.60%	1.85%	-0.91%
+17	17-10-2025	138	146	111	111	100.302.000	11.133.522.000	6.15%	12.31%	-14.62%	-14.62%	5.80%	21.23%
+18	16-10-2025	115	143	115	130	101.694.700	13.220.311.000	0.88%	25.44%	0.88%	14.04%	24.35%	23.08%
+19	15-10-2025	122	126	110	114	28.949.900	3.300.288.600	-3.17%	0.00%	-12.70%	-9.52%	3.28%	19.84%
+20	14-10-2025	105	134	101	126	99.127.400	12.490.052.400	0.96%	28.85%	-2.88%	21.15%	27.62%	23.13%
+21	13-10-2025	107	108	103	104	2.940.200	305.780.800	-1.83%	-0.92%	-5.50%	-4.59%	0.93%	1.85%
+22	10-10-2025	108	114	106	109	10.814.400	1.178.769.600	0.93%	6.54%	-0.93%	1.87%	5.56%	7.89%
+23	09-10-2025	106	110	105	107	1.549.900	165.839.300	0.00%	3.77%	-0.94%	0.94%	3.77%	4.55%
+24	08-10-2025	108	108	105	106	2.042.000	216.452.000	0.00%	0.00%	-2.78%	-1.85%	0.00%	1.85%
+25	07-10-2025	109	109	106	108	2.949.100	318.502.800	0.93%	0.93%	-1.85%	0.00%	0.00%	2.75%
+26	06-10-2025	111	112	106	108	8.051.800	869.594.400	0.91%	1.82%	-3.64%	-1.82%	0.90%	3.57%
+27	03-10-2025	111	112	108	110	5.490.000	603.900.000	0.00%	0.90%	-2.70%	-0.90%	0.90%	3.57%
+28	02-10-2025	109	112	108	111	4.905.700	544.532.700	0.00%	2.75%	-0.92%	1.83%	2.75%	5.36%
+29	01-10-2025	107	112	106	109	11.901.600	1.297.274.400	-3.60%	0.90%	-4.50%	-1.80%	4.67%	0.89%
+30	30-09-2025	122	122	111	111	47.073.600	5.225.169.600	-6.15%	-6.15%	-14.62%	-14.62%	0.00%	18.85%`;
+            
+            document.getElementById('stockData').value = sampleData;
+        }
+        
+        function clearData() {
+            document.getElementById('stockData').value = '';
+        }
+        
+        function checkKering() {
+            const stockData = document.getElementById('stockData').value;
+            const loading = document.getElementById('loading');
+            const resultDiv = document.getElementById('result');
+            
+            if (!stockData.trim()) {
+                alert('Masukkan data saham!');
+                return;
+            }
+            
+            loading.style.display = 'block';
+            resultDiv.innerHTML = '';
+            
+            setTimeout(() => {
+                try {
+                    const analysis = analyzeKering(stockData);
+                    displayResult(analysis);
+                } catch (error) {
+                    resultDiv.innerHTML = `<div class="result belum-kering">Error: ${error.message}</div>`;
+                } finally {
+                    loading.style.display = 'none';
+                }
+            }, 500);
+        }
+        
+        function analyzeKering(stockData) {
+            const lines = stockData.trim().split('\n').filter(line => line.trim());
+            const values = [];
+            const volumes = [];
+            let dataCount = 0;
+            
+            // Parse data - handle header dan berbagai format
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const parts = line.trim().split(/\s+/);
+                
+                // Skip header lines yang mengandung text
+                if (isHeaderLine(parts)) continue;
+                
+                // Minimal harus ada 8 kolom (sampai Value)
+                if (parts.length >= 8) {
+                    const volumeStr = parts[6].replace(/\./g, ''); // Remove dots from volume
+                    const valueStr = parts[7].replace(/\./g, ''); // Remove dots from value
+                    
+                    const volume = parseFloat(volumeStr);
+                    const value = parseFloat(valueStr);
+                    
+                    if (!isNaN(value) && !isNaN(volume) && value > 0) {
+                        values.push(value);
+                        volumes.push(volume);
+                        dataCount++;
+                    }
+                }
+            }
+            
+            if (dataCount < 10) {
+                throw new Error(`Data valid hanya ${dataCount}, butuh minimal 10 data!`);
+            }
+            
+            // Ambil 30 data terakhir atau semua yang ada
+            const recentValues = values.slice(0, 30);
+            const recentVolumes = volumes.slice(0, 30);
+            
+            const currentValue = recentValues[0];
+            const currentVolume = recentVolumes[0];
+            
+            // Hitung average 10 hari terakhir
+            const avg10Value = recentValues.slice(0, 10).reduce((a, b) => a + b, 0) / Math.min(recentValues.length, 10);
+            const avg10Volume = recentVolumes.slice(0, 10).reduce((a, b) => a + b, 0) / Math.min(recentVolumes.length, 10);
+            
+            // 1. VALUE RATIO (40 points)
+            const valueRatio = currentValue / avg10Value;
+            let valueScore = 0;
+            if (valueRatio <= 0.2) valueScore = 40;
+            else if (valueRatio <= 0.3) valueScore = 35;
+            else if (valueRatio <= 0.4) valueScore = 25;
+            else if (valueRatio <= 0.5) valueScore = 15;
+            else if (valueRatio <= 0.7) valueScore = 5;
+            
+            // 2. VOLUME CONFIRMATION (30 points)
+            const volumeRatio = currentVolume / avg10Volume;
+            let volumeScore = 0;
+            if (volumeRatio <= 0.3) volumeScore = 30;
+            else if (volumeRatio <= 0.5) volumeScore = 20;
+            else if (volumeRatio <= 0.7) volumeScore = 10;
+            
+            // 3. TREND CONSISTENCY (20 points)
+            let trendScore = 0;
+            if (recentValues.length >= 5) {
+                const last5Values = recentValues.slice(0, 5);
+                const isDeclining = last5Values.every((val, idx, arr) => 
+                    idx === 0 || val <= arr[idx - 1]
+                );
+                if (isDeclining) trendScore = 20;
+                else if (recentValues[0] < recentValues[1]) trendScore = 15;
+                else trendScore = 5;
+            }
+            
+            // 4. VALUE DROP MAGNITUDE (10 points)
+            let magnitudeScore = 0;
+            const maxValue = Math.max(...recentValues);
+            const dropRatio = (maxValue - currentValue) / maxValue;
+            if (dropRatio >= 0.8) magnitudeScore = 10;
+            else if (dropRatio >= 0.6) magnitudeScore = 8;
+            else if (dropRatio >= 0.4) magnitudeScore = 5;
+            
+            // FINAL SCORE
+            const totalScore = valueScore + volumeScore + trendScore + magnitudeScore;
+            
+            // DECISION
+            let status = 'BELUM KERING';
+            let statusClass = 'belum-kering';
+            let message = 'BELUM KERING - Value masih normal';
+            
+            if (totalScore >= 80) {
+                status = 'SANGAT KERING';
+                statusClass = 'sangat-kering';
+                message = ' SANGAT KERING - SIAP MELONJAK BESOK! ';
+            } else if (totalScore >= 60) {
+                status = 'KERING';
+                statusClass = 'kering';
+                message = ' KERING - POTENSI NAIK 5-20%!';
+            } else if (totalScore >= 40) {
+                status = 'MENUJU KERING';
+                statusClass = 'menuju-kering';
+                message = ' MENUJU KERING - AWASI 2-3 HARI';
+            }
+            
+            return {
+                status,
+                statusClass,
+                message,
+                totalScore,
+                breakdown: {
+                    valueScore,
+                    volumeScore, 
+                    trendScore,
+                    magnitudeScore
+                },
+                metrics: {
+                    currentValue: formatNumber(currentValue),
+                    avg10Value: formatNumber(avg10Value),
+                    valueRatio: (valueRatio * 100).toFixed(1),
+                    currentVolume: formatNumber(currentVolume),
+                    avg10Volume: formatNumber(avg10Volume),
+                    volumeRatio: (volumeRatio * 100).toFixed(1),
+                    dataCount
+                }
+            };
+        }
+        
+        function isHeaderLine(parts) {
+            const headerKeywords = ['Day', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value', 'Close to', 'Open to', 'Low to'];
+            return parts.some(part => headerKeywords.includes(part));
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'Jt';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'Rb';
+            }
+            return num.toFixed(0);
+        }
+        
+        function displayResult(analysis) {
+            const resultDiv = document.getElementById('result');
+            
+            const breakdownHTML = `
+                <div class="score-breakdown">
+                    <h3> Score Breakdown:</h3>
+                    <div class="score-item">
+                        <span>1. Value Ratio (40 points):</span>
+                        <span>${analysis.breakdown.valueScore} points</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill" style="width: ${analysis.breakdown.valueScore / 40 * 100}%; background: #ef4444;"></div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <span>2. Volume Confirmation (30 points):</span>
+                        <span>${analysis.breakdown.volumeScore} points</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill" style="width: ${analysis.breakdown.volumeScore / 30 * 100}%; background: #f59e0b;"></div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <span>3. Trend Consistency (20 points):</span>
+                        <span>${analysis.breakdown.trendScore} points</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill" style="width: ${analysis.breakdown.trendScore / 20 * 100}%; background: #10b981;"></div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <span>4. Value Drop Magnitude (10 points):</span>
+                        <span>${analysis.breakdown.magnitudeScore} points</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill" style="width: ${analysis.breakdown.magnitudeScore / 10 * 100}%; background: #3b82f6;"></div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <div class="final-score" style="color: ${analysis.totalScore >= 80 ? '#ef4444' : analysis.totalScore >= 60 ? '#f59e0b' : analysis.totalScore >= 40 ? '#3b82f6' : '#6b7280'}">
+                            ${analysis.totalScore}/100
+                        </div>
+                        <div style="font-size: 1.2em; font-weight: bold;">TOTAL SCORE</div>
+                    </div>
+                </div>
+                
+                <div class="details">
+                    <h3> Detail Metrics:</h3>
+                    <p><strong>Data Analyzed:</strong> ${analysis.metrics.dataCount} hari</p>
+                    <p><strong>Value Hari Ini:</strong> ${analysis.metrics.currentValue} vs <strong>Rata2 10 Hari:</strong> ${analysis.metrics.avg10Value}</p>
+                    <p><strong>Value Ratio:</strong> ${analysis.metrics.valueRatio}% (target < 30%)</p>
+                    <p><strong>Volume Ratio:</strong> ${analysis.metrics.volumeRatio}% (volume juga kecil)</p>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = `
+                <div class="result ${analysis.statusClass}">
+                    ${analysis.message}
+                </div>
+                ${breakdownHTML}
+            `;
+        }
+    </script>
+</body>
+</html>
