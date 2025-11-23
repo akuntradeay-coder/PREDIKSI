@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Dryness Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-section { 
+            margin-bottom: 20px; 
+            padding: 20px; 
+            border: 2px dashed #ddd; 
+            border-radius: 10px; 
+            background: #fafafa;
+        }
+        textarea { 
+            width: 100%; 
+            height: 200px; 
+            margin-bottom: 15px; 
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        button { 
+            padding: 12px 25px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .result { 
+            margin-top: 20px; 
+            padding: 20px; 
+            border-radius: 10px; 
+            border-left: 5px solid;
+        }
+        .potensi { 
+            background: #d4edda; 
+            color: #155724; 
+            border-left-color: #28a745;
+        }
+        .menuju-kering { 
+            background: #fff3cd; 
+            color: #856404; 
+            border-left-color: #ffc107;
+        }
+        .normal { 
+            background: #d1ecf1; 
+            color: #0c5460; 
+            border-left-color: #17a2b8;
+        }
+        .chart-container { 
+            margin-top: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .reasons-list {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .reasons-list li {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Stock Dryness Analyzer</h1>
+        <p>Analisis saham untuk mendeteksi kondisi "kering" atau "under value"</p>
+        
+        <div class="input-section">
+            <h3>📊 Paste Data Saham (Format Original):</h3>
+            <p><small>Copy-paste langsung data dari sumber tanpa perubahan format</small></p>
+            <textarea id="stockData" placeholder="Contoh:
+1	21-11-2025	2.370	2.390	2.280	2.310	4.425.100	10.221.981.000	0.85%	1.70%	-2.98%	-1.70%	0.84%	2.51%
+2	20-11-2025	2.370	2.440	2.330	2.350	5.542.900	13.025.815.000	0.00%	2.95%	-1.69%	-0.84%	2.95%	4.51%
+3	19-11-2025	2.430	2.440	2.330	2.370	4.330.100	10.262.337.000	2.10%	2.52%	-2.10%	-0.42%	0.41%	4.92%
+4	18-11-2025	2.470	2.470	2.320	2.380	5.458.900	12.992.182.000	-0.40%	-0.40%	-6.45%	-4.03%	0.00%	4.45%"></textarea>
+            <button onclick="analyzeStock()">🚀 Analisis Saham</button>
+        </div>
+
+        <div id="result" class="result" style="display:none;"></div>
+        <div class="chart-container">
+            <canvas id="stockChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        function analyzeStock() {
+            const dataInput = document.getElementById('stockData').value;
+            const stockData = parseStockData(dataInput);
+            
+            if (stockData.length < 5) {
+                alert('❌ Minimal 5 data hari diperlukan untuk analisis yang akurat');
+                return;
+            }
+
+            if (stockData.length > 0) {
+                console.log('Data pertama:', stockData[0]);
+            }
+
+            const analysis = analyzeStockData(stockData);
+            displayResult(analysis, stockData);
+        }
+
+        function parseStockData(textData) {
+            const lines = textData.trim().split('\n');
+            const stockData = [];
+            
+            for (const line of lines) {
+                if (line.trim() === '') continue;
+                
+                const parts = line.trim().split('\t');
+                if (parts.length >= 7) {
+                    try {
+                        // Parse data dengan format: Day Date Open High Low Close Volume Value ...
+                        const dataPoint = {
+                            Day: parseInt(parts[0]),
+                            Date: parts[1],
+                            Open: parseFloat(parts[2].replace('.', '').replace(',', '.')),
+                            High: parseFloat(parts[3].replace('.', '').replace(',', '.')),
+                            Low: parseFloat(parts[4].replace('.', '').replace(',', '.')),
+                            Close: parseFloat(parts[5].replace('.', '').replace(',', '.')),
+                            Volume: parseFloat(parts[6].replace(/\./g, '').replace(',', '.')),
+                            Value: parts[7] ? parseFloat(parts[7].replace(/\./g, '').replace(',', '.')) : 0
+                        };
+                        
+                        if (!isNaN(dataPoint.Close) && !isNaN(dataPoint.Volume)) {
+                            stockData.push(dataPoint);
+                        }
+                    } catch (e) {
+                        console.log('Error parsing line:', line, e);
+                    }
+                }
+            }
+            
+            // Urutkan dari tanggal terlama ke terbaru
+            return stockData.reverse();
+        }
+
+        function analyzeStockData(stockData) {
+            const closes = stockData.map(d => d.Close);
+            const volumes = stockData.map(d => d.Volume);
+            const highs = stockData.map(d => d.High);
+            const lows = stockData.map(d => d.Low);
+            const opens = stockData.map(d => d.Open);
+            
+            // 1. RSI Calculation
+            const rsi = calculateRSI(closes);
+            const currentRSI = rsi[rsi.length - 1];
+            
+            // 2. Volume Analysis
+            const avgVolume = calculateAverage(volumes);
+            const currentVolume = volumes[volumes.length - 1];
+            const volumeRatio = currentVolume / avgVolume;
+            
+            // 3. Price Momentum
+            const shortMA = calculateMA(closes, 3);
+            const mediumMA = calculateMA(closes, 5);
+            const longMA = calculateMA(closes, Math.min(10, stockData.length));
+            const currentPrice = closes[closes.length - 1];
+            
+            // 4. Volatility Analysis
+            const dailyRanges = highs.map((high, i) => high - lows[i]);
+            const avgRange = calculateAverage(dailyRanges);
+            const currentRange = dailyRanges[dailyRanges.length - 1];
+            const rangeRatio = currentRange / avgRange;
+            
+            // 5. Price Position
+            const recentLows = lows.slice(-5);
+            const recentHighs = highs.slice(-5);
+            const supportLevel = Math.min(...recentLows);
+            const resistanceLevel = Math.max(...recentHighs);
+            const pricePosition = (currentPrice - supportLevel) / (resistanceLevel - supportLevel);
+            
+            // 6. Trend Analysis
+            const priceTrend = calculateTrend(closes, 3);
+            const volumeTrend = calculateTrend(volumes, 3);
+            
+            // Scoring System
+            let score = 0;
+            let reasons = [];
+            
+            // RSI Analysis (30 points max)
+            if (currentRSI < 25) {
+                score += 12;
+                reasons.push(`🎯 RSI SANGAT RENDAH (${currentRSI.toFixed(1)}) - Kondisi oversold ekstrem`);
+            } else if (currentRSI < 30) {
+                score += 8;
+                reasons.push(`📉 RSI rendah (${currentRSI.toFixed(1)}) - Kondisi oversold`);
+            } else if (currentRSI < 35) {
+                score += 4;
+                reasons.push(`📊 RSI mendekati oversold (${currentRSI.toFixed(1)})`);
+            }
+            
+            // Volume Analysis (25 points max)
+            if (volumeRatio < 0.5) {
+                score += 10;
+                reasons.push(`💧 VOLUME SANGAT KERING (${(volumeRatio * 100).toFixed(1)}% dari rata-rata)`);
+            } else if (volumeRatio < 0.7) {
+                score += 7;
+                reasons.push(`💨 Volume rendah (${(volumeRatio * 100).toFixed(1)}% dari rata-rata)`);
+            } else if (volumeRatio < 0.9) {
+                score += 3;
+                reasons.push(`🌬️ Volume menurun (${(volumeRatio * 100).toFixed(1)}% dari rata-rata)`);
+            }
+            
+            // Volatility Analysis (20 points max)
+            if (rangeRatio < 0.5) {
+                score += 8;
+                reasons.push(`⚡ VOLATILITAS SANGAT RENDAH (${(rangeRatio * 100).toFixed(1)}% dari rata-rata)`);
+            } else if (rangeRatio < 0.7) {
+                score += 5;
+                reasons.push(`📏 Volatilitas rendah (${(rangeRatio * 100).toFixed(1)}% dari rata-rata)`);
+            }
+            
+            // Price Position (15 points max)
+            if (pricePosition < 0.2) {
+                score += 8;
+                reasons.push(`🛡️ HARGA DEKAT SUPPORT (${(pricePosition * 100).toFixed(1)}% dari range)`);
+            } else if (pricePosition < 0.3) {
+                score += 4;
+                reasons.push(`📈 Harga mendekati support (${(pricePosition * 100).toFixed(1)}% dari range)`);
+            }
+            
+            // Trend Analysis (10 points max)
+            if (priceTrend < -0.02 && volumeTrend < -0.1) {
+                score += 6;
+                reasons.push(`📉 Trend harga & volume turun - akumulasi diam-diam`);
+            }
+            
+            // Max score = 30 + 25 + 20 + 15 + 10 = 100
+            const normalizedScore = Math.min(10, Math.round(score / 5));
+            
+            // Prediction logic
+            let status = 'NORMAL';
+            let prediction = '';
+            let daysToDry = 0;
+            let confidence = 0;
+            
+            if (normalizedScore >= 8) {
+                status = 'POTENSI';
+                daysToDry = 0;
+                confidence = Math.min(95, 70 + (normalizedScore - 8) * 12);
+                prediction = `🎯 SAHAM SUDAH KERING! Potensi rally sangat tinggi dalam 1-2 hari ke depan (Confidence: ${confidence}%)`;
+            } else if (normalizedScore >= 6) {
+                status = 'MENUJU KERING';
+                daysToDry = Math.max(1, Math.round((8 - normalizedScore) * 2));
+                confidence = Math.min(80, 50 + (normalizedScore - 6) * 15);
+                prediction = `📈 Menuju kondisi kering dalam ${daysToDry} hari lagi. Confidence: ${confidence}%`;
+            } else if (normalizedScore >= 4) {
+                status = 'NORMAL';
+                daysToDry = Math.max(2, Math.round((8 - normalizedScore) * 3));
+                confidence = Math.min(60, 30 + (normalizedScore - 4) * 10);
+                prediction = `⚖️ Saham dalam kondisi normal, butuh ${daysToDry} hari menuju kering. Confidence: ${confidence}%`;
+            } else {
+                status = 'NORMAL';
+                prediction = `💤 Saham masih normal, belum menunjukkan tanda-tanda kering`;
+            }
+            
+            return {
+                status,
+                score: normalizedScore,
+                rawScore: score,
+                reasons,
+                prediction,
+                daysToDry,
+                confidence,
+                metrics: {
+                    rsi: currentRSI,
+                    volumeRatio,
+                    rangeRatio,
+                    pricePosition,
+                    priceTrend,
+                    volumeTrend,
+                    currentPrice,
+                    supportLevel,
+                    resistanceLevel
+                }
+            };
+        }
+
+        function calculateRSI(closes, period = 14) {
+            if (closes.length < period + 1) return Array(closes.length).fill(50);
+            
+            const gains = [];
+            const losses = [];
+            
+            for (let i = 1; i < closes.length; i++) {
+                const difference = closes[i] - closes[i - 1];
+                gains.push(Math.max(difference, 0));
+                losses.push(Math.max(-difference, 0));
+            }
+            
+            const rsi = [];
+            
+            // Calculate first RSI
+            let avgGain = gains.slice(0, period).reduce((a, b) => a + b) / period;
+            let avgLoss = losses.slice(0, period).reduce((a, b) => a + b) / period;
+            
+            if (avgLoss === 0) {
+                rsi.push(100);
+            } else {
+                const rs = avgGain / avgLoss;
+                rsi.push(100 - (100 / (1 + rs)));
+            }
+            
+            // Calculate subsequent RSIs
+            for (let i = period; i < gains.length; i++) {
+                avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+                avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+                
+                if (avgLoss === 0) {
+                    rsi.push(100);
+                } else {
+                    const rs = avgGain / avgLoss;
+                    rsi.push(100 - (100 / (1 + rs)));
+                }
+            }
+            
+            return Array(closes.length - rsi.length).fill(null).concat(rsi);
+        }
+
+        function calculateMA(data, period) {
+            if (data.length < period) return Array(data.length).fill(null);
+            
+            const ma = [];
+            for (let i = period - 1; i < data.length; i++) {
+                const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b);
+                ma.push(sum / period);
+            }
+            return Array(data.length - ma.length).fill(null).concat(ma);
+        }
+
+        function calculateTrend(data, period) {
+            if (data.length < period) return 0;
+            
+            const recent = data.slice(-period);
+            const first = recent[0];
+            const last = recent[recent.length - 1];
+            
+            return (last - first) / first;
+        }
+
+        function calculateAverage(arr) {
+            const validArr = arr.filter(val => !isNaN(val));
+            if (validArr.length === 0) return 0;
+            return validArr.reduce((a, b) => a + b) / validArr.length;
+        }
+
+        function displayResult(analysis, stockData) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            
+            let html = `
+                <h2>📊 Hasil Analisis: <strong>${analysis.status}</strong></h2>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${analysis.score}/10</div>
+                        <div class="metric-label">DRYNESS SCORE</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${analysis.metrics.rsi.toFixed(1)}</div>
+                        <div class="metric-label">RSI CURRENT</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(analysis.metrics.volumeRatio * 100).toFixed(1)}%</div>
+                        <div class="metric-label">VOLUME RATIO</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${analysis.metrics.currentPrice.toFixed(3)}</div>
+                        <div class="metric-label">CURRENT PRICE</div>
+                    </div>
+                </div>
+                
+                <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px;">
+                    <h3>🎯 Prediction:</h3>
+                    <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">${analysis.prediction}</p>
+                </div>
+            `;
+            
+            if (analysis.reasons.length > 0) {
+                html += `
+                    <h3>📋 Alasan Analisis:</h3>
+                    <div class="reasons-list">
+                        <ul>
+                `;
+                analysis.reasons.forEach(reason => {
+                    html += `<li>${reason}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+            
+            if (analysis.daysToDry > 0 && analysis.status !== 'POTENSI') {
+                html += `
+                    <div style="margin-top: 15px; padding: 12px; background: #e7f3ff; border-radius: 6px;">
+                        <strong>⏳ Perkiraan:</strong> Butuh ${analysis.daysToDry} hari lagi menuju kondisi kering
+                    </div>
+                `;
+            }
+            
+            // Add detailed metrics
+            html += `
+                <div style="margin-top: 20px;">
+                    <h3>🔍 Detailed Metrics:</h3>
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <div class="metric-value">${analysis.metrics.supportLevel.toFixed(3)}</div>
+                            <div class="metric-label">SUPPORT LEVEL</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${analysis.metrics.resistanceLevel.toFixed(3)}</div>
+                            <div class="metric-label">RESISTANCE LEVEL</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(analysis.metrics.rangeRatio * 100).toFixed(1)}%</div>
+                            <div class="metric-label">VOLATILITY RATIO</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${(analysis.metrics.priceTrend * 100).toFixed(1)}%</div>
+                            <div class="metric-label">PRICE TREND (3d)</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultDiv.className = 'result ' + 
+                (analysis.status === 'POTENSI' ? 'potensi' : 
+                 analysis.status === 'MENUJU KERING' ? 'menuju-kering' : 'normal');
+            resultDiv.innerHTML = html;
+            
+            createChart(stockData, analysis);
+        }
+
+        function createChart(stockData, analysis) {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            const dates = stockData.map(d => d.Date);
+            const closes = stockData.map(d => d.Close);
+            const volumes = stockData.map(d => d.Volume);
+            
+            // Clear previous chart
+            if (window.stockChartInstance) {
+                window.stockChartInstance.destroy();
+            }
+            
+            window.stockChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Close Price',
+                        data: closes,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Price'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Stock Price Chart - Status: ${analysis.status}`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
